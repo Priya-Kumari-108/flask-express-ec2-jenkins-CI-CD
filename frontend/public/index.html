@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>DevOps Frontend</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 16px;
+    background: #060b16;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+  .card {
+    width: 100%;
+    max-width: 420px;
+    background: #0b1424;
+    border: 1px solid #1c2b45;
+    border-radius: 14px;
+    padding: 28px;
+  }
+  h1 {
+    text-align: center;
+    color: #38bdf8;
+    text-shadow: 0 0 12px rgba(56,189,248,0.5);
+    font-size: 26px;
+    margin: 0 0 20px;
+  }
+  .status-box {
+    background: #0f1b30;
+    border: 1px solid #1c2b45;
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-family: 'Consolas', monospace;
+    font-size: 14px;
+    margin-bottom: 22px;
+  }
+  .status-box div { margin: 4px 0; color: #e2e8f0; }
+  .status-box .label { color: #38bdf8; font-weight: bold; }
+  .status-dot { color: #22c55e; }
+  .status-running { color: #22c55e; }
+
+  h2.section-title {
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: #94a3b8;
+    margin: 0 0 10px;
+  }
+  .tools-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .tool-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #111d33;
+    border: 1px solid #1c2b45;
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: #cbd5e1;
+    font-size: 14px;
+    cursor: pointer;
+    transition: 0.15s;
+  }
+  .tool-btn:hover { border-color: #38bdf8; }
+  .tool-btn.selected {
+    background: #14304a;
+    border-color: #38bdf8;
+    color: #e0f2fe;
+  }
+  .tool-icon { font-size: 16px; }
+
+  h3.form-title { color: #e2e8f0; font-size: 15px; margin: 0 0 12px; }
+
+  input[type="text"] {
+    width: 100%;
+    padding: 12px 14px;
+    background: #0f1b30;
+    border: 1px solid #1c2b45;
+    border-radius: 8px;
+    color: #e2e8f0;
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+  input[type="text"]::placeholder { color: #64748b; }
+
+  .selected-tool-box {
+    background: #0f1b30;
+    border: 1px solid #1c2b45;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    color: #38bdf8;
+    margin-bottom: 14px;
+  }
+
+  button.submit-btn {
+    width: 100%;
+    padding: 13px;
+    background: #0e7fa8;
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+    margin-bottom: 14px;
+  }
+  button.submit-btn:hover { background: #0d90bd; }
+  button.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .result-box {
+    display: none;
+    background: #0d2318;
+    border: 1px solid #1f5136;
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: #4ade80;
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+  }
+  .result-box.error {
+    background: #2a1212;
+    border-color: #5b2323;
+    color: #f87171;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>DevOps Frontend</h1>
+
+  <div class="status-box" id="statusBox">
+    <div><span class="label">Backend:</span> <span id="stBackend">connecting…</span></div>
+    <div><span class="label">Status:</span> <span class="status-dot">●</span> <span id="stStatus" class="status-running">…</span></div>
+    <div><span class="label">Message:</span> <span id="stMessage">…</span></div>
+  </div>
+
+  <h2 class="section-title">DEVOPS TOOLS</h2>
+  <div class="tools-grid" id="toolsGrid"></div>
+
+  <h3 class="form-title">Send Data to Backend</h3>
+  <input type="text" id="nameInput" placeholder="Enter your name" />
+
+  <div class="selected-tool-box" id="selectedBox">No tool selected — click one above</div>
+
+  <button class="submit-btn" id="submitBtn">Submit</button>
+
+  <div class="result-box" id="resultBox"></div>
+</div>
+
+<script>
+  const API_BASE = 'http://localhost:5000';
+  let selectedTool = null;
+
+  const toolsGrid = document.getElementById('toolsGrid');
+  const selectedBox = document.getElementById('selectedBox');
+  const nameInput = document.getElementById('nameInput');
+  const submitBtn = document.getElementById('submitBtn');
+  const resultBox = document.getElementById('resultBox');
+
+  async function loadHealth() {
+    try {
+      const res = await fetch(`${API_BASE}/api/health`);
+      const data = await res.json();
+      document.getElementById('stBackend').textContent = data.backend;
+      document.getElementById('stStatus').textContent = data.status;
+      document.getElementById('stMessage').textContent = data.message;
+    } catch (e) {
+      document.getElementById('stBackend').textContent = 'Unreachable';
+      document.getElementById('stStatus').textContent = 'Offline';
+      document.getElementById('stMessage').textContent = 'Could not reach Flask backend';
+    }
+  }
+
+  async function loadTools() {
+    try {
+      const res = await fetch(`${API_BASE}/api/tools`);
+      const tools = await res.json();
+      toolsGrid.innerHTML = '';
+      tools.forEach(tool => {
+        const btn = document.createElement('div');
+        btn.className = 'tool-btn';
+        btn.dataset.name = tool.name;
+        btn.innerHTML = `<span class="tool-icon">${tool.icon}</span><span>${tool.name}</span>`;
+        btn.addEventListener('click', () => selectTool(tool.name, btn));
+        toolsGrid.appendChild(btn);
+      });
+    } catch (e) {
+      toolsGrid.innerHTML = '<div style="color:#f87171;">Could not load tools</div>';
+    }
+  }
+
+  function selectTool(name, btnEl) {
+    selectedTool = name;
+    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('selected'));
+    btnEl.classList.add('selected');
+    selectedBox.textContent = `Selected: ${name}`;
+  }
+
+  submitBtn.addEventListener('click', async () => {
+    const name = nameInput.value.trim();
+    resultBox.style.display = 'none';
+
+    if (!name || !selectedTool) {
+      resultBox.className = 'result-box error';
+      resultBox.textContent = '⚠️ Enter your name and select a tool first.';
+      resultBox.style.display = 'block';
+      return;
+    }
+
+    submitBtn.disabled = true;
+    try {
+      const res = await fetch(`${API_BASE}/api/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, tool: selectedTool })
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || 'Submit failed');
+
+      resultBox.className = 'result-box';
+      resultBox.textContent = `✅ ${data.message}`;
+      resultBox.style.display = 'block';
+    } catch (e) {
+      resultBox.className = 'result-box error';
+      resultBox.textContent = `❌ ${e.message}`;
+      resultBox.style.display = 'block';
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+
+  loadHealth();
+  loadTools();
+</script>
+
+</body>
+</html>
