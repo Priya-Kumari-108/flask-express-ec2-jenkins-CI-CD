@@ -1,0 +1,34 @@
+pipeline {
+    agent any
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                echo 'Checking out latest backend code...'
+                checkout scm
+            }
+        }
+
+        stage('Deploy Backend') {
+            steps {
+                echo 'Deploying Flask backend...'
+
+                sh '''
+                    sudo /usr/local/bin/deploy-backend.sh "$WORKSPACE"
+                '''
+            }
+        }
+
+    }
+
+    post {
+        success {
+            echo 'Backend CI/CD pipeline completed successfully!'
+        }
+
+        failure {
+            echo 'Backend CI/CD pipeline failed.'
+        }
+    }
+}

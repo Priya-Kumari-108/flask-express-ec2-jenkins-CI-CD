@@ -1,0 +1,34 @@
+pipeline {
+    agent any
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                echo 'Checking out latest frontend code...'
+                checkout scm
+            }
+        }
+
+        stage('Deploy Frontend') {
+            steps {
+                echo 'Deploying Express frontend...'
+
+                sh '''
+                    sudo /usr/local/bin/deploy-frontend.sh "$WORKSPACE"
+                '''
+            }
+        }
+
+    }
+
+    post {
+        success {
+            echo 'Frontend CI/CD pipeline completed successfully!'
+        }
+
+        failure {
+            echo 'Frontend CI/CD pipeline failed.'
+        }
+    }
+}
