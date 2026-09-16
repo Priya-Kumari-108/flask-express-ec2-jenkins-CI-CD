@@ -1,0 +1,27 @@
+pipeline {
+    agent any
+
+    stages {
+
+        stage('Deploy Backend') {
+            steps {
+                echo 'Deploying Flask backend...'
+
+                sh '''
+                    sudo /usr/local/bin/deploy-backend.sh "$WORKSPACE"
+                '''
+            }
+        }
+
+    }
+
+    post {
+        success {
+            echo 'Backend CI/CD pipeline completed successfully!'
+        }
+
+        failure {
+            echo 'Backend CI/CD pipeline failed.'
+        }
+    }
+}
